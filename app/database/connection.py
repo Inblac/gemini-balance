@@ -23,6 +23,9 @@ elif settings.DATABASE_TYPE == "mysql":
         DATABASE_URL = f"mysql+pymysql://{settings.MYSQL_USER}:{settings.MYSQL_PASSWORD}@/{settings.MYSQL_DATABASE}?unix_socket={settings.MYSQL_SOCKET}"
     else:
         DATABASE_URL = f"mysql+pymysql://{settings.MYSQL_USER}:{settings.MYSQL_PASSWORD}@{settings.MYSQL_HOST}:{settings.MYSQL_PORT}/{settings.MYSQL_DATABASE}"
+elif settings.DATABASE_TYPE == "postgresql":
+    DATABASE_URL = f"postgresql+psycopg2://{settings.MYSQL_USER}:{settings.MYSQL_PASSWORD}@{settings.MYSQL_HOST}:{settings.MYSQL_PORT}/{settings.MYSQL_DATABASE}"
+
 else:
     raise ValueError("Unsupported database type. Please set DATABASE_TYPE to 'sqlite' or 'mysql'.")
 
@@ -44,8 +47,14 @@ Base = declarative_base(metadata=metadata)
 # databases 库会自动处理连接失效后的重连尝试。
 if settings.DATABASE_TYPE == "sqlite":
     database = Database(DATABASE_URL)
+elif settings.DATABASE_TYPE == "mysql":
+    database = Database(DATABASE_URL, min_size=5, max_size=20, pool_recycle=1800) # Reduced recycle time to 30 mins
+elif settings.DATABASE_TYPE == "postgresql":
+    database = Database(DATABASE_URL, min_size=5, max_size=20)
 else:
-    database = Database(DATABASE_URL, min_size=5, max_size=20, pool_recycle=1800)
+    raise ValueError("Unsupported database type. Please set DATABASE_TYPE to 'sqlite' or 'mysql'.")
+
+# 移除了 SessionLocal 和 get_db 函数
 
 async def connect_to_db():
     """

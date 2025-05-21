@@ -18,3 +18,6 @@ databases
 python-dotenv
 apscheduler
 packaging
+databases[postgresql]
+psycopg2-binary
+httpx[socks]
