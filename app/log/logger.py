@@ -231,3 +231,6 @@ def get_request_log_logger():
 def get_vertex_express_logger():
     return Logger.setup_logger("vertex_express")
 
+
+def get_openai_vertex_express_logger():
+    return Logger.setup_logger("openai_vertex_express")
