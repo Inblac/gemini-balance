@@ -149,6 +149,7 @@ class OpenAIMessageConverter(MessageConverter):
     ) -> tuple[List[Dict[str, Any]], Optional[Dict[str, Any]]]:
         converted_messages = []
         system_instruction_parts = []
+        is_head_system_message = True
 
         for idx, msg in enumerate(messages):
             role = msg.get("role", "")
@@ -316,15 +317,24 @@ class OpenAIMessageConverter(MessageConverter):
 
                     parts.append({"functionCall": function_call})
 
+            # sys_prompt改为user_prompt 开始==========================
             if role not in SUPPORTED_ROLES:
                 if role == "tool":
                     role = "user"
                 else:
                     # 如果是最后一条消息，则认为是用户消息
-                    if idx == len(messages) - 1:
-                        role = "user"
-                    else:
-                        role = "model"
+                    # if idx == len(messages) - 1:
+                    #     role = "user"
+                    # else:
+                    #     role = "model"
+                    role = "model"
+            # 只有开头连续的系统消息作为system_instruction，后续的系统消息转为用户消息
+            if role != "system":
+                is_head_system_message = False
+            else:
+                if not is_head_system_message:
+                    role = "user"
+            # sys_prompt改为user_prompt 结束==========================
             if parts:
                 if role == "system":
                     text_only_parts = [p for p in parts if "text" in p]
