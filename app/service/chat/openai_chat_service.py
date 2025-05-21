@@ -83,8 +83,12 @@ def _build_tools(
             names, functions = set(), []
             for fc in function_declarations:
                 if fc.get("name") not in names:
-                    names.add(fc.get("name"))
-                    functions.append(fc)
+                    if fc.get("name")=="googleSearch":
+                        # 如开启模型内置搜索，增加调用googleSearch的工具
+                        tool["googleSearch"] = {}
+                    else:
+                        names.add(fc.get("name"))
+                        functions.append(fc)
 
             tool["functionDeclarations"] = functions
 
