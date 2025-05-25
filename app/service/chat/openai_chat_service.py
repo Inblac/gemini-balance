@@ -84,9 +84,10 @@ def _build_tools(
             for fc in function_declarations:
                 if fc.get("name") not in names:
                     if fc.get("name")=="googleSearch":
-                        # 如开启模型内置搜索，增加调用googleSearch的工具
+                        # cherry开启内置搜索时，添加googleSearch工具
                         tool["googleSearch"] = {}
                     else:
+                        # 其他函数，添加到functionDeclarations中
                         names.add(fc.get("name"))
                         functions.append(fc)
 
