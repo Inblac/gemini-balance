@@ -1,6 +1,6 @@
 services:
   gemini-balance:
-    image: gemini-balance
+    image: nalvix/gemini-balance:latest
     container_name: gemini-balance
     restart: unless-stopped
     ports:

@@ -50,7 +50,7 @@ if settings.DATABASE_TYPE == "sqlite":
 elif settings.DATABASE_TYPE == "mysql":
     database = Database(DATABASE_URL, min_size=5, max_size=20, pool_recycle=1800) # Reduced recycle time to 30 mins
 elif settings.DATABASE_TYPE == "postgresql":
-    database = Database(DATABASE_URL, min_size=5, max_size=20)
+    database = Database(DATABASE_URL, min_size=2, max_size=5)
 else:
     raise ValueError("Unsupported database type. Please set DATABASE_TYPE to 'sqlite' or 'mysql'.")
 
