@@ -97,7 +97,7 @@ app/
 
     > Note: If using an SQLite database, you need to mount a data volume to persist 
     > ```bash
-    > docker run -d -p 8000:8000 --env-file .env -v /path/to//app/data gemini-balance
+    > docker run -d -p 8000:8000 --env-file .env -v /path/to/data:/app/data gemini-balance
     > ```
     > Where `/path/to/data` is the data storage path on the host, and `/app/data` is the data directory inside the container.
 
@@ -121,7 +121,7 @@ app/
 
     > Note: If using an SQLite database, you need to mount a data volume to persist 
     > ```bash
-    > docker run -d -p 8000:8000 --env-file .env -v /path/to//app/data ghcr.io/snailyp/gemini-balance:latest
+    > docker run -d -p 8000:8000 --env-file .env -v /path/to/data:/app/data ghcr.io/snailyp/gemini-balance:latest
     > ```
     > Where `/path/to/data` is the data storage path on the host, and `/app/data` is the data directory inside the container.
 
