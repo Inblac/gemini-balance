@@ -348,6 +348,7 @@ class OpenAIMessageConverter(MessageConverter):
                 else:
                     converted_messages.append({"role": role, "parts": parts})
 
+        converted_messages_merged = self._merge_consecutive_messages(converted_messages)
         system_instruction = (
             None
             if not system_instruction_parts
@@ -356,4 +357,40 @@ class OpenAIMessageConverter(MessageConverter):
                 "parts": system_instruction_parts,
             }
         )
-        return converted_messages, system_instruction
+        return converted_messages_merged, system_instruction
+
+    def _merge_consecutive_messages(self, converted_messages: list) -> list:
+        """
+        根据连续相邻的相同 role 合并消息列表，并拼接 parts 列表。
+        Args:
+            converted_messages: 原始消息列表，每个元素是一个字典，
+                                例如：[{'role': 'user', 'parts': ['text1']}, ...]
+        Returns:
+            合并后的消息列表。
+        """
+        if not converted_messages:
+            return []
+        merged_output = []
+        # 初始化第一个合并消息，使用 list(messages[0]['parts']) 创建一个新的列表副本
+        current_merged_message = {
+            'role': converted_messages[0]['role'],
+            'parts': list(converted_messages[0]['parts'])
+        }
+        merged_output.append(current_merged_message)
+        # 从第二个消息开始遍历
+        for i in range(1, len(converted_messages)):
+            message = converted_messages[i]
+            
+            # 如果当前消息的 role 与上一个合并消息的 role 相同
+            if message['role'] == current_merged_message['role']:
+                # 拼接 parts 列表
+                current_merged_message['parts'].extend(message['parts'])
+            else:
+                # role 不同，说明需要开始一个新的合并块
+                current_merged_message = {
+                    'role': message['role'],
+                    'parts': list(message['parts'])
+                }
+                merged_output.append(current_merged_message)
+                
+        return merged_output
