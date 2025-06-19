@@ -252,6 +252,14 @@ Thanks to all developers who contributed to this project!
 
 [![Contributors](https://contrib.rocks/image?repo=snailyp/gemini-balance)](https://github.com/snailyp/gemini-balance/graphs/contributors)
 
+## Thanks to Our Supporters
+
+We extend our heartfelt gratitude to the following supporters for their invaluable contributions to this project:
+
+[![DigitalOcean Logo](files/dataocean.svg)](https://m.do.co/c/b249dd7f3b4c)
+
+A special shout-out to DigitalOcean for providing the rock-solid and dependable cloud infrastructure that keeps this project humming!
+
 ## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=snailyp/gemini-balance&type=Date)](https://star-history.com/#snailyp/gemini-balance&Date)
@@ -263,10 +271,6 @@ Thanks to all developers who contributed to this project!
 ## 🎁 Project Support
 
 If you find this project helpful, consider supporting me via [Afdian](https://afdian.com/a/snaily).
-
-## VPS Recommend
-
-[![Powered by DartNode](https://dartnode.com/branding/DN-Open-Source-sm.png)](https://dartnode.com "Powered by DartNode - Free VPS for Open Source")
 
 ## License
 
