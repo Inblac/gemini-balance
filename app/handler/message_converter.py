@@ -3,6 +3,7 @@ import json
 import re
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
+from itertools import groupby
 
 import requests
 
@@ -359,7 +360,7 @@ class OpenAIMessageConverter(MessageConverter):
         )
         return converted_messages_merged, system_instruction
 
-    def _merge_consecutive_messages(self, converted_messages: list) -> list:
+    def _merge_consecutive_messages_parts(self, converted_messages: list) -> list:
         """
         根据连续相邻的相同 role 合并消息列表，并拼接 parts 列表。
         Args:
@@ -394,3 +395,58 @@ class OpenAIMessageConverter(MessageConverter):
                 merged_output.append(current_merged_message)
                 
         return merged_output
+
+    def _merge_consecutive_messages(self, messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        使用 itertools.groupby 高效合并连续相同角色的消息。
+        - 核心逻辑:
+          1. 使用 groupby 将消息按连续的 'role' 分组。
+          2. 对每个分组，遍历其中的所有消息和 parts。
+          3. 将纯文本 part 的内容收集起来，统一拼接。
+          4. 将非纯文本 part (如 video, audio 或复杂结构) 直接保留。
+          5. 将合并后的文本与保留的 parts 组合成一个新的消息。
+        Args:
+            messages: 原始消息列表。
+                      例如: [{'role': 'user', 'parts': [{'text': 'Hi'}]}]
+        Returns:
+            合并后的消息列表。
+        """
+        if not messages:
+            return []
+        merged_messages = []
+        # 1. 使用 groupby 按 'role' 对连续的消息进行分组
+        for role, group in groupby(messages, key=lambda m: m.get('role')):
+            # 如果 role 是 None 或消息格式不正确，则直接保留原始消息
+            if role is None:
+                merged_messages.extend(list(group))
+                continue
+            texts_to_join = []
+            other_parts = []
+            # 2. 遍历分组内的所有消息
+            for message in group:
+                # 使用 .get('parts', []) 确保即使 'parts' 键不存在也不会出错
+                for part in message.get('parts', []):
+                    # 3. 精确判断是否为“纯文本 part”
+                    #    - 必须是字典
+                    #    - 必须包含 'text' 键
+                    #    - 必须只有 'text' 这一个键
+                    if isinstance(part, dict) and 'text' in part and len(part) == 1:
+                        texts_to_join.append(part['text'])
+                    else:
+                        # 4. 保留所有非纯文本 part
+                        other_parts.append(part)
+            
+            # 5. 构建合并后新消息的 parts 列表
+            new_parts = []
+            # 如果有文本需要合并，则先添加合并后的文本 part
+            if texts_to_join:
+                # 使用 join 方法高效拼接字符串，并用换行符分隔
+                merged_text = "\n".join(texts_to_join)
+                new_parts.append({'text': merged_text})
+            
+            # 再添加所有保留下来的其他 parts
+            new_parts.extend(other_parts)
+            # 只有当 new_parts 不为空时，才创建并添加新的消息
+            if new_parts:
+                merged_messages.append({'role': role, 'parts': new_parts})
+        return merged_messages
