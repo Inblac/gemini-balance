@@ -63,7 +63,10 @@ class Settings(BaseSettings):
     PROXIES_USE_CONSISTENCY_HASH_BY_API_KEY: bool = True  # 是否使用一致性哈希来选择代理
     VERTEX_API_KEYS: List[str] = []
     VERTEX_EXPRESS_BASE_URL: str = "https://aiplatform.googleapis.com/v1beta1/publishers/google"
- 
+
+    # 智能路由配置
+    URL_NORMALIZATION_ENABLED: bool = False  # 是否启用智能路由映射功能
+
     # 模型相关配置
     SEARCH_MODELS: List[str] = ["gemini-2.0-flash-exp"]
     IMAGE_MODELS: List[str] = ["gemini-2.0-flash-exp"]
@@ -74,6 +77,11 @@ class Settings(BaseSettings):
     THINKING_MODELS: List[str] = []
     THINKING_BUDGET_MAP: Dict[str, float] = {}
 
+    # TTS相关配置
+    TTS_MODEL: str = "gemini-2.5-flash-preview-tts"
+    TTS_VOICE_NAME: str = "Zephyr"
+    TTS_SPEED: str = "normal"
+
     # 图像生成相关配置
     PAID_KEY: str = ""
     CREATE_IMAGE_MODEL: str = DEFAULT_CREATE_IMAGE_MODEL
@@ -82,6 +90,7 @@ class Settings(BaseSettings):
     PICGO_API_KEY: str = ""
     CLOUDFLARE_IMGBED_URL: str = ""
     CLOUDFLARE_IMGBED_AUTH_CODE: str = ""
+    CLOUDFLARE_IMGBED_UPLOAD_FOLDER: str = ""
 
     # 流式输出优化器配置
     STREAM_OPTIMIZER_ENABLED: bool = False
@@ -110,6 +119,7 @@ class Settings(BaseSettings):
     AUTO_DELETE_REQUEST_LOGS_ENABLED: bool = False
     AUTO_DELETE_REQUEST_LOGS_DAYS: int = 30
     SAFETY_SETTINGS: List[Dict[str, str]] = DEFAULT_SAFETY_SETTINGS
+
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
