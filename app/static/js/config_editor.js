@@ -1462,7 +1462,7 @@ function addArrayItem(key) {
   const modelId = addArrayItemWithValue(key, newItemValue); // This adds the DOM element
 
   if (key === "THINKING_MODELS" && modelId) {
-    createAndAppendBudgetMapItem(newItemValue, 0, modelId); // Default budget 0
+    createAndAppendBudgetMapItem(newItemValue, -1, modelId); // Default budget -1
   }
 }
 
@@ -1572,7 +1572,7 @@ function createAndAppendBudgetMapItem(mapKey, mapValue, modelId) {
   const valueInput = document.createElement("input");
   valueInput.type = "number";
   const intValue = parseInt(mapValue, 10);
-  valueInput.value = isNaN(intValue) ? 0 : intValue;
+  valueInput.value = isNaN(intValue) ? -1 : intValue;
   valueInput.placeholder = "预算 (整数)";
   valueInput.className = `${MAP_VALUE_INPUT_CLASS} w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary-500 focus:ring focus:ring-primary-200 focus:ring-opacity-50`;
   valueInput.min = -1;
@@ -1733,7 +1733,7 @@ function collectFormData() {
         formData["THINKING_BUDGET_MAP"][keyInput.value.trim()] = isNaN(
           budgetValue
         )
-          ? 0
+          ? -1
           : budgetValue;
       }
     });
@@ -2284,7 +2284,7 @@ function handleModelSelection(selectedModelId) {
     );
     if (currentModelHelperTarget.targetKey === "THINKING_MODELS" && modelId) {
       // Automatically add corresponding budget map item with default budget 0
-      createAndAppendBudgetMapItem(selectedModelId, 0, modelId);
+      createAndAppendBudgetMapItem(selectedModelId, -1, modelId);
     }
   }
 
