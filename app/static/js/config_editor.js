@@ -13,7 +13,7 @@ const SHOW_CLASS = "show"; // For modals
 const API_KEY_REGEX = /AIzaSy\S{33}/g;
 const PROXY_REGEX =
   /(?:https?|socks5):\/\/(?:[^:@\/]+(?::[^@\/]+)?@)?(?:[^:\/\s]+)(?::\d+)?/g;
-const VERTEX_API_KEY_REGEX = /AQ\.[a-zA-Z0-9_]{50}/g; // 新增 Vertex Express API Key 正则
+const VERTEX_API_KEY_REGEX = /AQ\.[a-zA-Z0-9_\-]{50}/g; // 新增 Vertex Express API Key 正则
 const MASKED_VALUE = "••••••••";
 
 // DOM Elements - Global Scope for frequently accessed elements
@@ -713,7 +713,13 @@ async function initConfig() {
       config.SAFETY_SETTINGS = []; // 默认为空数组
     }
     // --- 结束：处理 SAFETY_SETTINGS 默认值 ---
-
+    if (typeof config.URL_CONTEXT_ENABLED === "undefined") {
+      config.URL_CONTEXT_ENABLED = true;
+    }
+    if (!config.URL_CONTEXT_MODELS || !Array.isArray(config.URL_CONTEXT_MODELS)) {
+      config.URL_CONTEXT_MODELS = [];
+    }
+ 
     // --- 新增：处理自动删除错误日志配置的默认值 ---
     if (typeof config.AUTO_DELETE_ERROR_LOGS_ENABLED === "undefined") {
       config.AUTO_DELETE_ERROR_LOGS_ENABLED = false;
