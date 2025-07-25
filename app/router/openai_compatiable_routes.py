@@ -46,7 +46,7 @@ async def list_models(
     operation_name = "list_models"
     async with handle_route_errors(logger, operation_name):
         logger.info("Handling models list request")
-        api_key = await key_manager.get_first_valid_key()
+        api_key = await key_manager.get_random_valid_key()
         logger.info(f"Using API key: {redact_key_for_logging(api_key)}")
         return await openai_service.get_models(api_key)
 

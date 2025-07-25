@@ -46,7 +46,7 @@ async def list_models(
     logger.info("Handling Gemini models list request")
 
     try:
-        api_key = await key_manager.get_first_valid_key()
+        api_key = await key_manager.get_random_valid_key()
         if not api_key:
             raise HTTPException(status_code=503, detail="No valid API keys available to fetch models.")
         logger.info(f"Using API key: {redact_key_for_logging(api_key)}")

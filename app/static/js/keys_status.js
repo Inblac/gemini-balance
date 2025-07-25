@@ -502,7 +502,7 @@ function showVerificationResultModal(data) {
     messageElement.appendChild(successDiv);
   }
 
-  // 失败列表
+  // 失败列表 - 按错误码分组展示
   if (Object.keys(failedKeys).length > 0) {
     const failDiv = document.createElement("div");
     failDiv.className = "mb-1"; // 减少底部边距
@@ -531,66 +531,143 @@ function showVerificationResultModal(data) {
     failHeader.appendChild(copyFailBtn);
     failDiv.appendChild(failHeader);
 
-    const failList = document.createElement("ul");
-    failList.className =
-      "text-sm text-gray-600 max-h-32 overflow-y-auto bg-red-50 p-2 rounded border border-red-200 space-y-1"; // 增加最大高度和间距
+    // 按错误码分组失败的密钥
+    const errorGroups = {};
     Object.entries(failedKeys).forEach(([key, error]) => {
-      const li = document.createElement("li");
-      // li.className = 'flex justify-between items-center'; // Restore original layout
-      li.className = "flex flex-col items-start"; // Start with vertical layout
+      // 提取错误码或使用完整错误信息作为分组键
+      let errorCode = error;
+      
+      // 尝试提取常见的错误码模式
+      const errorCodePatterns = [
+        /status code (\d+)/,
+      ];
+      
+      for (const pattern of errorCodePatterns) {
+        const match = error.match(pattern);
+        if (match) {
+          errorCode = match[1] || match[0];
+          break;
+        }
+      }
+      
+      // 如果没有匹配到特定模式，使用500
+      if (errorCode === error) {
+        errorCode = 500;
+      }
+      
+      if (!errorGroups[errorCode]) {
+        errorGroups[errorCode] = [];
+      }
+      errorGroups[errorCode].push({ key, error });
+    });
 
-      const keySpanContainer = document.createElement("div");
-      keySpanContainer.className = "flex justify-between items-center w-full"; // Ensure key and button are on the same line initially
+    // 创建分组展示容器
+    const groupsContainer = document.createElement("div");
+    groupsContainer.className = "space-y-3 max-h-64 overflow-y-auto bg-red-50 p-2 rounded border border-red-200";
 
-      const keySpan = document.createElement("span");
-      keySpan.className = "font-mono";
-      // Store full key in dataset, display masked
-      keySpan.dataset.fullKey = key;
-      keySpan.textContent =
-        key.substring(0, 4) + "..." + key.substring(key.length - 4);
+    // 按错误码分组展示
+    Object.entries(errorGroups).forEach(([errorCode, keyErrorPairs]) => {
+      const groupDiv = document.createElement("div");
+      groupDiv.className = "border border-red-300 rounded-lg bg-white p-2";
 
-      const detailsButton = document.createElement("button");
-      detailsButton.className =
-        "ml-2 px-2 py-0.5 bg-red-200 hover:bg-red-300 text-red-700 text-xs rounded transition-colors";
-      detailsButton.innerHTML = '<i class="fas fa-info-circle mr-1"></i>详情';
-      detailsButton.dataset.error = error; // 将错误信息存储在 data 属性中
-      detailsButton.onclick = (e) => {
-        e.stopPropagation(); // Prevent modal close
-        const button = e.currentTarget;
-        const listItem = button.closest("li");
-        const errorMsg = button.dataset.error;
-        const errorDetailsId = `error-details-${key.replace(
-          /[^a-zA-Z0-9]/g,
-          ""
-        )}`; // Create unique ID
-        let errorDiv = listItem.querySelector(`#${errorDetailsId}`);
+      // 错误码标题
+      const groupHeader = document.createElement("div");
+      groupHeader.className = "flex justify-between items-center mb-2 cursor-pointer";
+      groupHeader.innerHTML = `
+        <div class="flex items-center gap-2">
+          <i class="fas fa-chevron-down group-toggle-icon text-red-600 transition-transform duration-200"></i>
+          <h5 class="font-semibold text-red-700 text-sm">错误码: ${errorCode}</h5>
+          <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs font-medium">${keyErrorPairs.length} 个密钥</span>
+        </div>
+        <button class="px-2 py-0.5 bg-red-200 hover:bg-red-300 text-red-700 text-xs rounded transition-colors group-copy-btn">
+          <i class="fas fa-copy mr-1"></i>复制组内密钥
+        </button>
+      `;
 
-        if (errorDiv) {
-          // Collapse: Remove error div and reset li layout
-          errorDiv.remove();
-          // listItem.className = 'flex justify-between items-center'; // Restore original layout
-          listItem.className = "flex flex-col items-start"; // Keep vertical layout
-          button.innerHTML = '<i class="fas fa-info-circle mr-1"></i>详情'; // Restore button text
+      // 复制组内密钥功能
+      const groupCopyBtn = groupHeader.querySelector('.group-copy-btn');
+      groupCopyBtn.onclick = (e) => {
+        e.stopPropagation();
+        const groupKeys = keyErrorPairs.map(pair => pair.key);
+        copyToClipboard(groupKeys.join("\n"))
+          .then(() =>
+            showNotification(
+              `已复制 ${groupKeys.length} 个密钥 (错误码: ${errorCode})`,
+              "success"
+            )
+          )
+          .catch(() => showNotification("复制失败", "error"));
+      };
+
+      // 密钥列表容器
+      const keysList = document.createElement("div");
+      keysList.className = "group-keys-list space-y-1";
+
+      keyErrorPairs.forEach(({ key, error }) => {
+        const keyItem = document.createElement("div");
+        keyItem.className = "flex flex-col items-start bg-gray-50 p-2 rounded border";
+
+        const keySpanContainer = document.createElement("div");
+        keySpanContainer.className = "flex justify-between items-center w-full";
+
+        const keySpan = document.createElement("span");
+        keySpan.className = "font-mono text-sm";
+        keySpan.dataset.fullKey = key;
+        keySpan.textContent = key.substring(0, 4) + "..." + key.substring(key.length - 4);
+
+        const detailsButton = document.createElement("button");
+        detailsButton.className = "ml-2 px-2 py-0.5 bg-red-200 hover:bg-red-300 text-red-700 text-xs rounded transition-colors";
+        detailsButton.innerHTML = '<i class="fas fa-info-circle mr-1"></i>详情';
+        detailsButton.dataset.error = error;
+        detailsButton.onclick = (e) => {
+          e.stopPropagation();
+          const button = e.currentTarget;
+          const keyItem = button.closest(".bg-gray-50");
+          const errorMsg = button.dataset.error;
+          const errorDetailsId = `error-details-${key.replace(/[^a-zA-Z0-9]/g, "")}`;
+          let errorDiv = keyItem.querySelector(`#${errorDetailsId}`);
+
+          if (errorDiv) {
+            errorDiv.remove();
+            button.innerHTML = '<i class="fas fa-info-circle mr-1"></i>详情';
+          } else {
+            errorDiv = document.createElement("div");
+            errorDiv.id = errorDetailsId;
+            errorDiv.className = "w-full mt-2 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100 whitespace-pre-wrap break-words";
+            errorDiv.textContent = errorMsg;
+            keyItem.appendChild(errorDiv);
+            button.innerHTML = '<i class="fas fa-chevron-up mr-1"></i>收起';
+          }
+        };
+
+        keySpanContainer.appendChild(keySpan);
+        keySpanContainer.appendChild(detailsButton);
+        keyItem.appendChild(keySpanContainer);
+        keysList.appendChild(keyItem);
+      });
+
+      // 分组折叠/展开功能
+      groupHeader.onclick = (e) => {
+        if (e.target.closest('.group-copy-btn')) return; // 避免复制按钮触发折叠
+        
+        const toggleIcon = groupHeader.querySelector('.group-toggle-icon');
+        const isCollapsed = keysList.style.display === 'none';
+        
+        if (isCollapsed) {
+          keysList.style.display = 'block';
+          toggleIcon.style.transform = 'rotate(0deg)';
         } else {
-          // Expand: Create and append error div, change li layout
-          errorDiv = document.createElement("div");
-          errorDiv.id = errorDetailsId;
-          errorDiv.className =
-            "w-full mt-1 pl-0 text-xs text-red-600 bg-red-50 p-1 rounded border border-red-100 whitespace-pre-wrap break-words"; // Adjusted padding
-          errorDiv.textContent = errorMsg;
-          listItem.appendChild(errorDiv);
-          listItem.className = "flex flex-col items-start"; // Change layout to vertical
-          button.innerHTML = '<i class="fas fa-chevron-up mr-1"></i>收起'; // Change button text
-          // Move button to be alongside the keySpan for vertical layout (already done)
+          keysList.style.display = 'none';
+          toggleIcon.style.transform = 'rotate(-90deg)';
         }
       };
 
-      keySpanContainer.appendChild(keySpan); // Add keySpan to container
-      keySpanContainer.appendChild(detailsButton); // Add button to container
-      li.appendChild(keySpanContainer); // Add container to list item
-      failList.appendChild(li);
+      groupDiv.appendChild(groupHeader);
+      groupDiv.appendChild(keysList);
+      groupsContainer.appendChild(groupDiv);
     });
-    failDiv.appendChild(failList);
+
+    failDiv.appendChild(groupsContainer);
     messageElement.appendChild(failDiv);
   }
 

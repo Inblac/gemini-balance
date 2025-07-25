@@ -1,4 +1,5 @@
 import asyncio
+import random
 from itertools import cycle
 from typing import Dict, Union
 
@@ -194,6 +195,25 @@ class KeyManager:
             logger.warning("API key list is empty, cannot get first valid key.")
             return ""
         return self.api_keys[0]
+
+    async def get_random_valid_key(self) -> str:
+        """获取随机的有效API key"""
+        valid_keys = []
+        async with self.failure_count_lock:
+            for key in self.key_failure_counts:
+                if self.key_failure_counts[key] < self.MAX_FAILURES:
+                    valid_keys.append(key)
+        
+        if valid_keys:
+            return random.choice(valid_keys)
+        
+        # 如果没有有效的key，返回第一个key作为fallback
+        if self.api_keys:
+            logger.warning("No valid keys available, returning first key as fallback.")
+            return self.api_keys[0]
+        
+        logger.warning("API key list is empty, cannot get random valid key.")
+        return ""
 
 
 _singleton_instance = None
