@@ -4,6 +4,7 @@ from typing import Dict, Union
 
 from app.config.config import settings
 from app.log.logger import get_key_manager_logger
+from app.utils.helpers import redact_key_for_logging
 
 logger = get_key_manager_logger()
 
@@ -65,7 +66,7 @@ class KeyManager:
         async with self.failure_count_lock:
             if key in self.key_failure_counts:
                 self.key_failure_counts[key] = 0
-                logger.info(f"Reset failure count for key: {key}")
+                logger.info(f"Reset failure count for key: {redact_key_for_logging(key)}")
                 return True
             logger.warning(
                 f"Attempt to reset failure count for non-existent key: {key}"
@@ -77,7 +78,7 @@ class KeyManager:
         async with self.vertex_failure_count_lock:
             if key in self.vertex_key_failure_counts:
                 self.vertex_key_failure_counts[key] = 0
-                logger.info(f"Reset failure count for Vertex key: {key}")
+                logger.info(f"Reset failure count for Vertex key: {redact_key_for_logging(key)}")
                 return True
             logger.warning(
                 f"Attempt to reset failure count for non-existent Vertex key: {key}"
@@ -116,7 +117,7 @@ class KeyManager:
             self.key_failure_counts[api_key] += 1
             if self.key_failure_counts[api_key] >= self.MAX_FAILURES:
                 logger.warning(
-                    f"API key {api_key} has failed {self.MAX_FAILURES} times"
+                    f"API key {redact_key_for_logging(api_key)} has failed {self.MAX_FAILURES} times"
                 )
         if retries < settings.MAX_RETRIES:
             return await self.get_next_working_key()
@@ -129,7 +130,7 @@ class KeyManager:
             self.vertex_key_failure_counts[api_key] += 1
             if self.vertex_key_failure_counts[api_key] >= self.MAX_FAILURES:
                 logger.warning(
-                    f"Vertex Express API key {api_key} has failed {self.MAX_FAILURES} times"
+                    f"Vertex Express API key {redact_key_for_logging(api_key)} has failed {self.MAX_FAILURES} times"
                 )
 
     def get_fail_count(self, key: str) -> int:
@@ -139,6 +140,18 @@ class KeyManager:
     def get_vertex_fail_count(self, key: str) -> int:
         """获取指定 Vertex 密钥的失败次数"""
         return self.vertex_key_failure_counts.get(key, 0)
+
+    async def get_all_keys_with_fail_count(self) -> dict:
+        """获取所有API key及其失败次数"""
+        all_keys = {}
+        async with self.failure_count_lock:
+            for key in self.api_keys:
+                all_keys[key] = self.key_failure_counts.get(key, 0)
+        
+        valid_keys = {k: v for k, v in all_keys.items() if v < self.MAX_FAILURES}
+        invalid_keys = {k: v for k, v in all_keys.items() if v >= self.MAX_FAILURES}
+        
+        return {"valid_keys": valid_keys, "invalid_keys": invalid_keys, "all_keys": all_keys}
 
     async def get_keys_by_status(self) -> dict:
         """获取分类后的API key列表，包括失败次数"""

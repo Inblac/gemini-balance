@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from app.core.security import verify_auth_token
 from app.log.logger import Logger, get_config_routes_logger
 from app.service.config.config_service import ConfigService
+from app.utils.helpers import redact_key_for_logging
 
 router = APIRouter(prefix="/api/config", tags=["config"])
 
@@ -63,10 +64,10 @@ class DeleteKeysRequest(BaseModel):
 async def delete_single_key(key_to_delete: str, request: Request):
     auth_token = request.cookies.get("auth_token")
     if not auth_token or not verify_auth_token(auth_token):
-        logger.warning(f"Unauthorized attempt to delete key: {key_to_delete}")
+        logger.warning(f"Unauthorized attempt to delete key: {redact_key_for_logging(key_to_delete)}")
         return RedirectResponse(url="/", status_code=302)
     try:
-        logger.info(f"Attempting to delete key: {key_to_delete}")
+        logger.info(f"Attempting to delete key: {redact_key_for_logging(key_to_delete)}")
         result = await ConfigService.delete_key(key_to_delete)
         if not result.get("success"):
             raise HTTPException(
@@ -79,7 +80,7 @@ async def delete_single_key(key_to_delete: str, request: Request):
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error deleting key '{key_to_delete}': {e}", exc_info=True)
+        logger.error(f"Error deleting key '{redact_key_for_logging(key_to_delete)}': {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error deleting key: {str(e)}")
 
 
