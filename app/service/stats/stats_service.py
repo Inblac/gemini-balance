@@ -19,35 +19,15 @@ class StatsService:
         """获取过去 N 秒内的调用次数 (总数、成功、失败)"""
         try:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(seconds=seconds)
-            query = select(
-                func.count(RequestLog.id).label("total"),
-                func.sum(
-                    case(
-                        (
-                            and_(
-                                RequestLog.status_code >= 200,
-                                RequestLog.status_code < 300,
-                            ),
-                            1,
-                        ),
-                        else_=0,
-                    )
-                ).label("success"),
-                func.sum(
-                    case(
-                        (
-                            or_(
-                                RequestLog.status_code < 200,
-                                RequestLog.status_code >= 300,
-                            ),
-                            1,
-                        ),
-                        (RequestLog.status_code is None, 1),
-                        else_=0,
-                    )
-                ).label("failure"),
-            ).where(RequestLog.request_time >= cutoff_time)
-            result = await database.fetch_one(query)
+            query = '''
+            SELECT
+                COUNT(id) AS total,
+                SUM(CASE WHEN status_code >= 200 AND status_code < 300 THEN 1 ELSE 0 END) AS success,
+                SUM(CASE WHEN status_code >= 200 AND status_code < 300 THEN 0 ELSE 1 END) AS failure
+            FROM t_request_log
+            WHERE request_time >= :cutoff_time;
+            '''
+            result = await database.fetch_one(query=query, values={"cutoff_time": cutoff_time})
             if result:
                 return {
                     "total": result["total"] or 0,
@@ -74,35 +54,15 @@ class StatsService:
             start_of_month = now.replace(
                 day=1, hour=0, minute=0, second=0, microsecond=0
             )
-            query = select(
-                func.count(RequestLog.id).label("total"),
-                func.sum(
-                    case(
-                        (
-                            and_(
-                                RequestLog.status_code >= 200,
-                                RequestLog.status_code < 300,
-                            ),
-                            1,
-                        ),
-                        else_=0,
-                    )
-                ).label("success"),
-                func.sum(
-                    case(
-                        (
-                            or_(
-                                RequestLog.status_code < 200,
-                                RequestLog.status_code >= 300,
-                            ),
-                            1,
-                        ),
-                        (RequestLog.status_code is None, 1),
-                        else_=0,
-                    )
-                ).label("failure"),
-            ).where(RequestLog.request_time >= start_of_month)
-            result = await database.fetch_one(query)
+            query = '''
+            SELECT
+                COUNT(id) AS total,
+                SUM(CASE WHEN status_code >= 200 AND status_code < 300 THEN 1 ELSE 0 END) AS success,
+                SUM(CASE WHEN status_code >= 200 AND status_code < 300 THEN 0 ELSE 1 END) AS failure
+            FROM t_request_log
+            WHERE request_time >= :start_of_month;
+            '''
+            result = await database.fetch_one(query=query, values={"start_of_month": start_of_month})
             if result:
                 return {
                     "total": result["total"] or 0,

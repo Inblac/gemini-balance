@@ -1,0 +1,58 @@
+# .github/workflows/docker-build-publish.yml
+name: 🐳 Build & Publish gemini-balance Docker Image
+
+on:
+  push:
+    branches:
+      - dev # 当代码推送到 dev 分支时触发
+    tags:
+      - 'v*.*.*' # 当创建 vX.Y.Z 格式的 Git Tag 时触发
+  pull_request:
+    branches:
+      - dev # 对 dev 分支的 PR 也进行构建，但不发布
+  workflow_dispatch: # 允许手动触发此 workflow
+
+env:
+  # 替换为你的 Docker Hub 用户名和镜像名
+  # 例如：your-docker-username/gemini-balance
+  DOCKER_IMAGE_NAME: nalvix/gemini-balance 
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest # 在 Ubuntu 虚拟机上运行
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v4 # 拉取仓库代码
+
+      - name: ⚙️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3 # 设置 Docker Buildx，支持多平台和缓存
+
+      - name: 🔑 Login to Docker Hub
+        # 只有在非 Pull Request 事件且分支为dev时才登录和发布
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/dev'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🏷️ Extract Docker metadata (tags, labels)
+        id: meta # 为此步骤分配一个 ID，以便其他步骤引用其输出
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE_NAME }} # 使用上面定义的镜像名
+          tags: | # 定义镜像标签的生成规则
+            # 只有在推送到 dev 分支时才打 latest 标签
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/dev', github.event.repository.default_branch) }} 
+
+      - name: 🏗️ Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: . # Dockerfile 的上下文路径，默认为当前仓库根目录
+          file: ./Dockerfile # Dockerfile 的路径，默认为 Dockerfile
+          # 只有在非 Pull Request 事件且分支为dev时才进行 push
+          push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/dev' }}
+          tags: ${{ steps.meta.outputs.tags }} # 使用 metadata-action 生成的标签
+          labels: ${{ steps.meta.outputs.labels }} # 使用 metadata-action 生成的标签
+          cache-from: type=gha # 启用 GitHub Actions 缓存，加速后续构建
+          cache-to: type=gha,mode=max # 将缓存写入 GitHub Actions 缓存
