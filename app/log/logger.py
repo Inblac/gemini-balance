@@ -288,6 +288,10 @@ def get_gemini_embedding_logger():
     return Logger.setup_logger("gemini_embedding")
 
 
+def get_openai_vertex_express_logger():
+    return Logger.setup_logger("openai_vertex_express")
+
+
 def setup_access_logging():
     """
     Configure uvicorn access logging with API key redaction
