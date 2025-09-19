@@ -1,5 +1,4 @@
 import datetime
-import re
 import time
 from typing import List, Union
 
@@ -56,13 +55,9 @@ class EmbeddingService:
             raise e
         except Exception as e:
             is_success = False
+            status_code = 500
             error_log_msg = f"Generic error: {e}"
             logger.error(f"Error creating embedding (Exception): {error_log_msg}")
-            match = re.search(r"status code (\d+)", str(e))
-            if match:
-                status_code = int(match.group(1))
-            else:
-                status_code = 500
             raise e
         finally:
             end_time = time.perf_counter()
@@ -74,7 +69,11 @@ class EmbeddingService:
                     error_type="openai-embedding",
                     error_log=error_log_msg,
                     error_code=status_code,
-                    request_msg=request_msg_log,
+                    request_msg=(
+                        request_msg_log
+                        if settings.ERROR_LOG_RECORD_REQUEST_BODY
+                        else None
+                    ),
                     request_datetime=request_datetime,
                 )
             await add_request_log(

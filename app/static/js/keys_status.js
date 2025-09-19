@@ -541,30 +541,13 @@ function showVerificationResultModal(data) {
     const errorGroups = {};
     Object.entries(failedKeys).forEach(([key, error]) => {
       // 提取错误码或使用完整错误信息作为分组键
-      let errorCode = error;
-      
-      // 尝试提取常见的错误码模式
-      const errorCodePatterns = [
-        /status code (\d+)/,
-      ];
-      
-      for (const pattern of errorCodePatterns) {
-        const match = error.match(pattern);
-        if (match) {
-          errorCode = match[1] || match[0];
-          break;
-        }
-      }
-      
-      // 如果没有匹配到特定模式，使用500
-      if (errorCode === error) {
-        errorCode = 500;
-      }
+      let errorCode = error["error_code"];
+      let errorMessage = error["error_message"];
       
       if (!errorGroups[errorCode]) {
         errorGroups[errorCode] = [];
       }
-      errorGroups[errorCode].push({ key, error });
+      errorGroups[errorCode].push({ key, errorMessage });
     });
 
     // 创建分组展示容器
@@ -609,7 +592,7 @@ function showVerificationResultModal(data) {
       const keysList = document.createElement("div");
       keysList.className = "group-keys-list space-y-1";
 
-      keyErrorPairs.forEach(({ key, error }) => {
+      keyErrorPairs.forEach(({ key, errorMessage }) => {
         const keyItem = document.createElement("div");
         keyItem.className = "flex flex-col items-start bg-gray-50 p-2 rounded border";
 
@@ -624,7 +607,7 @@ function showVerificationResultModal(data) {
         const detailsButton = document.createElement("button");
         detailsButton.className = "ml-2 px-2 py-0.5 bg-red-200 hover:bg-red-300 text-red-700 text-xs rounded transition-colors";
         detailsButton.innerHTML = '<i class="fas fa-info-circle mr-1"></i>详情';
-        detailsButton.dataset.error = error;
+        detailsButton.dataset.error = errorMessage;
         detailsButton.onclick = (e) => {
           e.stopPropagation();
           const button = e.currentTarget;
@@ -984,7 +967,6 @@ function initializeGlobalBatchVerificationHandlers() {
     document.getElementById("verifyModal").classList.add("hidden");
   };
 
-  // executeVerifyAll 变为 initializeGlobalBatchVerificationHandlers 的局部函数
   async function executeVerifyAll(type) {
     closeVerifyModal();
     const keysToVerify = getSelectedKeys(type);
@@ -1055,8 +1037,6 @@ function initializeGlobalBatchVerificationHandlers() {
         invalid_count: Object.keys(allFailedKeys).length
     });
   }
-  // The confirmButton.onclick in showVerifyModal (defined earlier in initializeGlobalBatchVerificationHandlers)
-  // will correctly reference this local executeVerifyAll due to closure.
 }
 
 // --- 进度条模态框函数 ---
@@ -2549,6 +2529,7 @@ function showVerifyModalForAllKeys(allKeys) {
   // 显示模态框
   modalElement.classList.remove("hidden");
 }
+
 
 // 执行验证所有密钥
 async function executeVerifyAllKeys(allKeys) {

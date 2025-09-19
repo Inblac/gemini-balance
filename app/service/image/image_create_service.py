@@ -9,6 +9,7 @@ from app.config.config import settings
 from app.core.constants import VALID_IMAGE_RATIOS
 from app.domain.openai_models import ImageGenerationRequest
 from app.log.logger import get_image_create_logger
+from app.utils.helpers import is_image_upload_configured
 from app.utils.uploader import ImageUploaderFactory
 
 logger = get_image_create_logger()
@@ -97,12 +98,18 @@ class ImageCreateService:
                 image_data = generated_image.image.image_bytes
                 image_uploader = None
 
-                if request.response_format == "b64_json":
+                # Return base64 if explicitly requested or if no uploader is configured
+                if (
+                    request.response_format == "b64_json"
+                    or not is_image_upload_configured(settings)
+                ):
                     base64_image = base64.b64encode(image_data).decode("utf-8")
                     images_data.append(
                         {"b64_json": base64_image, "revised_prompt": request.prompt}
                     )
+                    continue
                 else:
+                    # Upload to configured provider
                     current_date = time.strftime("%Y/%m/%d")
                     filename = f"{current_date}/{uuid.uuid4().hex[:8]}.png"
 
@@ -115,6 +122,7 @@ class ImageCreateService:
                         image_uploader = ImageUploaderFactory.create(
                             provider=settings.UPLOAD_PROVIDER,
                             api_key=settings.PICGO_API_KEY,
+                            api_url=settings.PICGO_API_URL,
                         )
                     elif settings.UPLOAD_PROVIDER == "cloudflare_imgbed":
                         image_uploader = ImageUploaderFactory.create(
@@ -122,6 +130,16 @@ class ImageCreateService:
                             base_url=settings.CLOUDFLARE_IMGBED_URL,
                             auth_code=settings.CLOUDFLARE_IMGBED_AUTH_CODE,
                             upload_folder=settings.CLOUDFLARE_IMGBED_UPLOAD_FOLDER,
+                        )
+                    elif settings.UPLOAD_PROVIDER == "aliyun_oss":
+                        image_uploader = ImageUploaderFactory.create(
+                            provider=settings.UPLOAD_PROVIDER,
+                            access_key=settings.OSS_ACCESS_KEY,
+                            access_key_secret=settings.OSS_ACCESS_KEY_SECRET,
+                            bucket_name=settings.OSS_BUCKET_NAME,
+                            endpoint=settings.OSS_ENDPOINT,
+                            region=settings.OSS_REGION,
+                            use_internal=False
                         )
                     else:
                         raise ValueError(

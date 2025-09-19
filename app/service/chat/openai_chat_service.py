@@ -3,7 +3,6 @@
 import asyncio
 import datetime
 import json
-import re
 import time
 from copy import deepcopy
 from typing import Any, AsyncGenerator, Dict, List, Optional, Union
@@ -285,7 +284,9 @@ class OpenAIChatService:
         api_key: str,
     ) -> Union[Dict[str, Any], AsyncGenerator[str, None]]:
         """创建聊天完成"""
-        messages, instruction = self.message_converter.convert(request.messages)
+        messages, instruction = self.message_converter.convert(
+            request.messages, request.model
+        )
 
         payload = _build_payload(request, messages, instruction)
 
@@ -337,7 +338,8 @@ class OpenAIChatService:
 
         except Exception as e:
             is_success = False
-            error_log_msg = str(e)
+            status_code = e.args[0]
+            error_log_msg = e.args[1]
             logger.error(f"API call failed for model {model}: {error_log_msg}")
 
             # 特别记录 max_tokens 相关的错误
@@ -351,16 +353,13 @@ class OpenAIChatService:
             if "parts" in error_log_msg:
                 logger.error("This is likely a response processing error")
 
-            match = re.search(r"status code (\d+)", error_log_msg)
-            status_code = int(match.group(1)) if match else 500
-
             await add_error_log(
                 gemini_key=api_key,
                 model_name=model,
                 error_type="openai-chat-non-stream",
                 error_log=error_log_msg,
                 error_code=status_code,
-                request_msg=payload,
+                request_msg=payload if settings.ERROR_LOG_RECORD_REQUEST_BODY else None,
                 request_datetime=request_datetime,
             )
             raise e
@@ -538,19 +537,11 @@ class OpenAIChatService:
             except Exception as e:
                 retries += 1
                 is_success = False
-                error_log_msg = str(e)
+                status_code = e.args[0]
+                error_log_msg = e.args[1]
                 logger.warning(
                     f"Streaming API call failed with error: {error_log_msg}. Attempt {retries} of {max_retries} with key {current_attempt_key}"
                 )
-
-                match = re.search(r"status code (\d+)", error_log_msg)
-                if match:
-                    status_code = int(match.group(1))
-                else:
-                    if isinstance(e, asyncio.TimeoutError):
-                        status_code = 408
-                    else:
-                        status_code = 500
 
                 await add_error_log(
                     gemini_key=current_attempt_key,
@@ -558,7 +549,9 @@ class OpenAIChatService:
                     error_type="openai-chat-stream",
                     error_log=error_log_msg,
                     error_code=status_code,
-                    request_msg=payload,
+                    request_msg=(
+                        payload if settings.ERROR_LOG_RECORD_REQUEST_BODY else None
+                    ),
                     request_datetime=request_datetime,
                 )
 
@@ -575,7 +568,7 @@ class OpenAIChatService:
                         logger.error(
                             f"No valid API key available after {retries} retries, ceasing attempts for this request."
                         )
-                        break
+                        raise
                 else:
                     logger.error(
                         "KeyManager not available, cannot switch API key. Ceasing attempts for this request."
@@ -586,6 +579,7 @@ class OpenAIChatService:
                     logger.error(
                         f"Max retries ({max_retries}) reached for streaming model {model}."
                     )
+                    raise
             finally:
                 end_time = time.perf_counter()
                 latency_ms = int((end_time - start_time) * 1000)
@@ -597,13 +591,6 @@ class OpenAIChatService:
                     latency_ms=latency_ms,
                     request_time=request_datetime,
                 )
-
-        if not is_success:
-            logger.error(
-                f"Streaming failed permanently for model {model} after {retries} attempts."
-            )
-            yield f"data: {json.dumps({'error': f'Streaming failed after {retries} retries.'})}\n\n"
-            yield "data: [DONE]\n\n"
 
     async def create_image_chat_completion(
         self, request: ChatRequest, api_key: str
@@ -663,20 +650,23 @@ class OpenAIChatService:
             yield "data: [DONE]\n\n"
         except Exception as e:
             is_success = False
-            error_log_msg = f"Stream image completion failed for model {model}: {e}"
+            status_code = e.args[0]
+            error_log_msg = e.args[1]
             logger.error(error_log_msg)
-            status_code = 500
             await add_error_log(
                 gemini_key=api_key,
                 model_name=model,
                 error_type="openai-image-stream",
                 error_log=error_log_msg,
                 error_code=status_code,
-                request_msg={"image_data_truncated": image_data[:1000]},
+                request_msg=(
+                    {"image_data_truncated": image_data[:1000]}
+                    if settings.ERROR_LOG_RECORD_REQUEST_BODY
+                    else None
+                ),
                 request_datetime=request_datetime,
             )
-            yield f"data: {json.dumps({'error': error_log_msg})}\n\n"
-            yield "data: [DONE]\n\n"
+            raise
         finally:
             end_time = time.perf_counter()
             latency_ms = int((end_time - start_time) * 1000)
@@ -714,19 +704,23 @@ class OpenAIChatService:
             return result
         except Exception as e:
             is_success = False
-            error_log_msg = f"Normal image completion failed for model {model}: {e}"
+            status_code = e.args[0]
+            error_log_msg = e.args[1]
             logger.error(error_log_msg)
-            status_code = 500
             await add_error_log(
                 gemini_key=api_key,
                 model_name=model,
                 error_type="openai-image-non-stream",
                 error_log=error_log_msg,
                 error_code=status_code,
-                request_msg={"image_data_truncated": image_data[:1000]},
+                request_msg=(
+                    {"image_data_truncated": image_data[:1000]}
+                    if settings.ERROR_LOG_RECORD_REQUEST_BODY
+                    else None
+                ),
                 request_datetime=request_datetime,
             )
-            raise e
+            raise
         finally:
             end_time = time.perf_counter()
             latency_ms = int((end_time - start_time) * 1000)

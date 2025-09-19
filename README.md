@@ -137,6 +137,8 @@ app/
 
 ### Gemini API Format (`/gemini/v1beta`)
 
+This endpoint is directly forwarded to official Gemini API format endpoint, without advanced features.
+
 *   `GET /models`: List available Gemini models.
 *   `POST /models/{model_name}:generateContent`: Generate content.
 *   `POST /models/{model_name}:streamGenerateContent`: Stream content generation.
@@ -145,12 +147,16 @@ app/
 
 #### Hugging Face (HF) Compatible
 
+If you want to use advanced features, like fake streaming, please use this endpoint.
+
 *   `GET /hf/v1/models`: List models.
 *   `POST /hf/v1/chat/completions`: Chat completion.
 *   `POST /hf/v1/embeddings`: Create text embeddings.
 *   `POST /hf/v1/images/generations`: Generate images.
 
 #### Standard OpenAI
+
+This endpoint is directly forwarded to official OpenAI Compatible API format endpoint, without advanced features.
 
 *   `GET /openai/v1/models`: List models.
 *   `POST /openai/v1/chat/completions`: Chat completion (Recommended).
@@ -178,9 +184,9 @@ app/
 | `ALLOWED_TOKENS` | **Required**, list of access tokens | `[]` |
 | `AUTH_TOKEN` | Super admin token, defaults to the first of `ALLOWED_TOKENS` | `sk-123456` |
 | `ADMIN_SESSION_EXPIRE` | Admin session expiration time in seconds (5 minutes to 24 hours) | `3600` |
-| `TEST_MODEL` | Model for testing key validity | `gemini-1.5-flash` |
-| `IMAGE_MODELS` | Models supporting image generation | `["gemini-2.0-flash-exp"]` |
-| `SEARCH_MODELS` | Models supporting web search | `["gemini-2.0-flash-exp"]` |
+| `TEST_MODEL` | Model for testing key validity | `gemini-2.5-flash-lite` |
+| `IMAGE_MODELS` | Models supporting image generation | `["gemini-2.0-flash-exp", "gemini-2.5-flash-image-preview"]` |
+| `SEARCH_MODELS` | Models supporting web search | `["gemini-2.5-flash","gemini-2.5-pro"]` |
 | `FILTERED_MODELS` | Disabled models | `[]` |
 | `TOOLS_CODE_EXECUTION_ENABLED` | Enable code execution tool | `false` |
 | `SHOW_SEARCH_LINK` | Display search result links in response | `true` |
@@ -199,6 +205,7 @@ app/
 | `PROXIES` | List of proxy servers | `[]` |
 | **Logging & Security** | | |
 | `LOG_LEVEL` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
+| `ERROR_LOG_RECORD_REQUEST_BODY` | Record request body in error logs (may contain sensitive information) | `false` |
 | `AUTO_DELETE_ERROR_LOGS_ENABLED` | Auto-delete error logs | `true` |
 | `AUTO_DELETE_ERROR_LOGS_DAYS` | Error log retention period (days) | `7` |
 | `AUTO_DELETE_REQUEST_LOGS_ENABLED`| Auto-delete request logs | `false` |
@@ -211,9 +218,16 @@ app/
 | **Image Generation** | | |
 | `PAID_KEY` | Paid API Key for advanced features | `your-paid-api-key` |
 | `CREATE_IMAGE_MODEL` | Image generation model | `imagen-3.0-generate-002` |
-| `UPLOAD_PROVIDER` | Image upload provider: `smms`, `picgo`, `cloudflare_imgbed` | `smms` |
+| `UPLOAD_PROVIDER` | Image upload provider: `smms`, `picgo`, `cloudflare_imgbed`, `aliyun_oss` | `smms` |
+| `OSS_ENDPOINT` | Aliyun OSS public endpoint | `oss-cn-shanghai.aliyuncs.com` |
+| `OSS_ENDPOINT_INNER` | Aliyun OSS internal endpoint (intra-VPC) | `oss-cn-shanghai-internal.aliyuncs.com` |
+| `OSS_ACCESS_KEY` | Aliyun AccessKey ID | `LTAI5txxxxxxxxxxxxxxxx` |
+| `OSS_ACCESS_KEY_SECRET` | Aliyun AccessKey Secret | `yXxxxxxxxxxxxxxxxxxxxxx` |
+| `OSS_BUCKET_NAME` | Aliyun OSS bucket name | `your-bucket-name` |
+| `OSS_REGION` | Aliyun OSS region | `cn-shanghai` |
 | `SMMS_SECRET_TOKEN` | SM.MS API Token | `your-smms-token` |
 | `PICGO_API_KEY` | PicoGo API Key | `your-picogo-apikey` |
+| `PICGO_API_URL` | PicoGo API Server URL | `https://www.picgo.net/api/1/upload` |
 | `CLOUDFLARE_IMGBED_URL` | CloudFlare ImgBed upload URL | `https://xxxxxxx.pages.dev/upload` |
 | `CLOUDFLARE_IMGBED_AUTH_CODE`| CloudFlare ImgBed auth key | `your-cloudflare-imgber-auth-code` |
 | `CLOUDFLARE_IMGBED_UPLOAD_FOLDER`| CloudFlare ImgBed upload folder | `""` |

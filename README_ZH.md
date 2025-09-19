@@ -138,6 +138,8 @@ app/
 
 ### Gemini API 格式 (`/gemini/v1beta`)
 
+此端点将请求直接转发到官方 Gemini API 格式的端点，不包含高级功能。
+
 *   `GET /models`: 列出可用的 Gemini 模型。
 *   `POST /models/{model_name}:generateContent`: 生成内容。
 *   `POST /models/{model_name}:streamGenerateContent`: 流式生成内容。
@@ -146,12 +148,16 @@ app/
 
 #### 兼容 huggingface (HF) 格式
 
+如果您需要使用高级功能（例如假流式输出），请使用此端点。
+
 *   `GET /hf/v1/models`: 列出模型。
 *   `POST /hf/v1/chat/completions`: 聊天补全。
 *   `POST /hf/v1/embeddings`: 创建文本嵌入。
 *   `POST /hf/v1/images/generations`: 生成图像。
 
 #### 标准 OpenAI 格式
+
+此端点直接转发至官方的 OpenAI 兼容 API 格式端点，不包含高级功能。
 
 *   `GET /openai/v1/models`: 列出模型。
 *   `POST /openai/v1/chat/completions`: 聊天补全 (推荐，速度更快，防截断)。
@@ -178,9 +184,9 @@ app/
 | `API_KEYS` | **必填**, Gemini API 密钥列表，用于负载均衡 | `[]` |
 | `ALLOWED_TOKENS` | **必填**, 允许访问的 Token 列表 | `[]` |
 | `AUTH_TOKEN` | 超级管理员 Token，不填则使用 `ALLOWED_TOKENS` 的第一个 | `sk-123456` |
-| `TEST_MODEL` | 用于测试密钥可用性的模型 | `gemini-1.5-flash` |
-| `IMAGE_MODELS` | 支持绘图功能的模型列表 | `["gemini-2.0-flash-exp"]` |
-| `SEARCH_MODELS` | 支持搜索功能的模型列表 | `["gemini-2.0-flash-exp"]` |
+| `TEST_MODEL` | 用于测试密钥可用性的模型 | `gemini-2.5-flash-lite` |
+| `IMAGE_MODELS` | 支持绘图功能的模型列表 | `["gemini-2.0-flash-exp", "gemini-2.5-flash-image-preview"]` |
+| `SEARCH_MODELS` | 支持搜索功能的模型列表 | `["gemini-2.5-flash","gemini-2.5-pro"]` |
 | `FILTERED_MODELS` | 被禁用的模型列表 | `[]` |
 | `TOOLS_CODE_EXECUTION_ENABLED` | 是否启用代码执行工具 | `false` |
 | `SHOW_SEARCH_LINK` | 是否在响应中显示搜索结果链接 | `true` |
@@ -199,6 +205,7 @@ app/
 | `PROXIES` | 代理服务器列表 (例如 `http://user:pass@host:port`) | `[]` |
 | **日志与安全** | | |
 | `LOG_LEVEL` | 日志级别: `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
+| `ERROR_LOG_RECORD_REQUEST_BODY` | 是否记录错误日志的请求体（可能包含敏感信息） | `false` |
 | `AUTO_DELETE_ERROR_LOGS_ENABLED` | 是否自动删除错误日志 | `true` |
 | `AUTO_DELETE_ERROR_LOGS_DAYS` | 错误日志保留天数 | `7` |
 | `AUTO_DELETE_REQUEST_LOGS_ENABLED`| 是否自动删除请求日志 | `false` |
@@ -211,9 +218,16 @@ app/
 | **图像生成相关** | | |
 | `PAID_KEY` | 付费版API Key，用于图片生成等高级功能 | `your-paid-api-key` |
 | `CREATE_IMAGE_MODEL` | 图片生成模型 | `imagen-3.0-generate-002` |
-| `UPLOAD_PROVIDER` | 图片上传提供商: `smms`, `picgo`, `cloudflare_imgbed` | `smms` |
+| `UPLOAD_PROVIDER` | 图片上传提供商: `smms`, `picgo`, `cloudflare_imgbed`, `aliyun_oss` | `smms` |
+| `OSS_ENDPOINT` | 阿里云 OSS 公网 Endpoint | `oss-cn-shanghai.aliyuncs.com` |
+| `OSS_ENDPOINT_INNER` | 阿里云 OSS 内网 Endpoint（同 VPC 内网访问） | `oss-cn-shanghai-internal.aliyuncs.com` |
+| `OSS_ACCESS_KEY` | 阿里云 AccessKey ID | `LTAI5txxxxxxxxxxxxxxxx` |
+| `OSS_ACCESS_KEY_SECRET` | 阿里云 AccessKey Secret | `yXxxxxxxxxxxxxxxxxxxxxx` |
+| `OSS_BUCKET_NAME` | 阿里云 OSS Bucket 名称 | `your-bucket-name` |
+| `OSS_REGION` | 阿里云 OSS 区域 Region | `cn-shanghai` |
 | `SMMS_SECRET_TOKEN` | SM.MS图床的API Token | `your-smms-token` |
 | `PICGO_API_KEY` | [PicoGo](https://www.picgo.net/)图床的API Key | `your-picogo-apikey` |
+| `PICGO_API_URL` | [PicoGo](https://www.picgo.net/)图床的API服务器地址 | `https://www.picgo.net/api/1/upload` |
 | `CLOUDFLARE_IMGBED_URL` | [CloudFlare](https://github.com/MarSeventh/CloudFlare-ImgBed) 图床上传地址 | `https://xxxxxxx.pages.dev/upload` |
 | `CLOUDFLARE_IMGBED_AUTH_CODE`| CloudFlare图床的鉴权key | `your-cloudflare-imgber-auth-code` |
 | `CLOUDFLARE_IMGBED_UPLOAD_FOLDER`| CloudFlare图床的上传文件夹路径 | `""` |
